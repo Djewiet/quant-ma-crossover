@@ -15,7 +15,7 @@ build/
 .env.*
 
 # Market data (raw downloads are never committed; re-create with `uv run ma-crossover fetch`)
-data/
+/data/
 
 # Notebooks
 .ipynb_checkpoints/
