@@ -34,7 +34,7 @@ nav:
   - Accueil: index.md
   - Données de marché: donnees-de-marche.md
   - Référence API:
-      - reference/index.md
+      - Vue d'ensemble: reference/index.md
       - Configuration: reference/config.md
       - Données: reference/data.md
 
