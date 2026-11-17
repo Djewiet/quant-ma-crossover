@@ -1,0 +1,33 @@
+# All data parameters live here: nothing is hard-coded in src/.
+data:
+  source: yfinance
+  # Fixed end date (inclusive) => reproducible downloads. Bump it deliberately.
+  end: "2026-11-13"
+  raw_dir: data/raw
+  processed_dir: data/processed
+  assets:
+    btc:
+      ticker: BTC-USD        # Yahoo aggregate quote, first bar 2014-09-17
+      calendar: crypto       # trades 24/7: one bar per calendar day (UTC)
+      start: "2014-09-17"
+      kind: crypto
+    spy:
+      ticker: SPY            # investable ETF; adj_close = total return (dividends reinvested)
+      calendar: XNYS         # NYSE sessions (~252/year)
+      start: "1993-01-29"    # SPY inception
+      kind: etf
+    spx:
+      ticker: ^GSPC          # S&P 500 price index: NO dividends, not investable
+      calendar: XNYS
+      start: "1990-01-02"
+      kind: index
+
+validation:
+  # Sessions expected by the calendar but absent from the data (tolerated before failing).
+  max_missing_sessions: 0
+  # |daily simple return| above this is reported as a warning (not an error).
+  extreme_return_threshold: 0.25
+  # Number of consecutive identical closes reported as a warning.
+  max_stale_days: 5
+  # Relative tolerance for OHLC consistency and adjustment-ratio checks.
+  price_rel_tol: 1.0e-6
