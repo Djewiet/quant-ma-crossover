@@ -51,34 +51,61 @@ def load_asset(
     from_cache = store.exists(asset.ticker, start, end) and not refresh
     if from_cache:
         raw, manifest = store.read(asset.ticker, start, end)
-        log.info("%s: cache hit (%s, downloaded %s)", asset.name, asset.ticker,
-                 manifest.downloaded_at)
+        log.info(
+            "%s: cache hit (%s, downloaded %s)", asset.name, asset.ticker, manifest.downloaded_at
+        )
     else:
-        log.info("%s: downloading %s [%s, %s] from %s", asset.name, asset.ticker, start, end,
-                 source.name)
+        log.info(
+            "%s: downloading %s [%s, %s] from %s", asset.name, asset.ticker, start, end, source.name
+        )
         raw = source.fetch(asset.ticker, start, end)
-        manifest = store.write(raw, ticker=asset.ticker, start=start, end=end,
-                               source=source.name, source_version=source.version())
+        manifest = store.write(
+            raw,
+            ticker=asset.ticker,
+            start=start,
+            end=end,
+            source=source.name,
+            source_version=source.version(),
+        )
 
     effective_end = last_complete_date(end, today)
     prices = normalize(raw)
-    prices = prices.loc[pd.Timestamp(start, tz="UTC"):pd.Timestamp(effective_end, tz="UTC")]
+    prices = prices.loc[pd.Timestamp(start, tz="UTC") : pd.Timestamp(effective_end, tz="UTC")]
 
-    report = validate_prices(prices, name=asset.name, calendar=asset.calendar, kind=asset.kind,
-                             start=start, end=effective_end, cfg=cfg.validation)
+    report = validate_prices(
+        prices,
+        name=asset.name,
+        calendar=asset.calendar,
+        kind=asset.kind,
+        start=start,
+        end=effective_end,
+        cfg=cfg.validation,
+    )
     log.info("%s", report.summary())
     if strict:
         report.raise_if_errors()
 
     out = cfg.data.processed_dir / f"{asset.name}.parquet"
     write_parquet_atomic(prices, out)
-    out.with_suffix(".json").write_text(json.dumps({
-        "asset": asset.name, "ticker": asset.ticker, "calendar": asset.calendar,
-        "kind": asset.kind, "raw_sha256": manifest.sha256, "rows": len(prices),
-        "first": f"{report.first:%Y-%m-%d}" if report.first is not None else None,
-        "last": f"{report.last:%Y-%m-%d}" if report.last is not None else None,
-        "errors": len(report.errors), "warnings": len(report.warnings),
-    }, indent=2) + "\n", encoding="utf-8")
+    out.with_suffix(".json").write_text(
+        json.dumps(
+            {
+                "asset": asset.name,
+                "ticker": asset.ticker,
+                "calendar": asset.calendar,
+                "kind": asset.kind,
+                "raw_sha256": manifest.sha256,
+                "rows": len(prices),
+                "first": f"{report.first:%Y-%m-%d}" if report.first is not None else None,
+                "last": f"{report.last:%Y-%m-%d}" if report.last is not None else None,
+                "errors": len(report.errors),
+                "warnings": len(report.warnings),
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     return LoadedAsset(asset, prices, report, manifest, from_cache, out)
 
 
@@ -95,8 +122,10 @@ def load_all(
     unknown = set(selected) - set(cfg.data.assets)
     if unknown:
         raise KeyError(f"unknown assets {sorted(unknown)}; known: {sorted(cfg.data.assets)}")
-    return {n: load_asset(cfg.data.assets[n], cfg, source, refresh=refresh, strict=strict,
-                          today=today) for n in selected}
+    return {
+        n: load_asset(cfg.data.assets[n], cfg, source, refresh=refresh, strict=strict, today=today)
+        for n in selected
+    }
 
 
 def read_processed(cfg: Config, name: str) -> pd.DataFrame:

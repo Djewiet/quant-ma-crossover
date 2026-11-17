@@ -63,8 +63,10 @@ class ValidationReport:
 
     def summary(self) -> str:
         span = f"{self.first:%Y-%m-%d} -> {self.last:%Y-%m-%d}" if self.first is not None else "-"
-        lines = [f"[{self.name}] {self.n_rows} rows, {span}: "
-                 f"{len(self.errors)} error(s), {len(self.warnings)} warning(s)"]
+        lines = [
+            f"[{self.name}] {self.n_rows} rows, {span}: "
+            f"{len(self.errors)} error(s), {len(self.warnings)} warning(s)"
+        ]
         lines += [f"  {i.severity.upper():7} {i.check}: {i.message}" for i in self.issues]
         return "\n".join(lines)
 
@@ -125,8 +127,11 @@ def validate_prices(
         add(Issue("index_sorted", err, "index is not sorted ascending"))
     dup = idx[idx.duplicated()]
     if len(dup):
-        add(Issue("duplicates", err, f"{len(dup)} duplicated dates: {_fmt(_dates(dup))}",
-                  _dates(dup)))
+        add(
+            Issue(
+                "duplicates", err, f"{len(dup)} duplicated dates: {_fmt(_dates(dup))}", _dates(dup)
+            )
+        )
 
     missing_cols = [c for c in COLUMNS if c not in df.columns]
     if missing_cols:
@@ -137,12 +142,21 @@ def validate_prices(
     for col in ("close", "adj_close"):
         nan_idx = idx[df[col].isna().to_numpy()]
         if len(nan_idx):
-            add(Issue(f"nan_{col}", err, f"{len(nan_idx)} NaN in {col}: {_fmt(_dates(nan_idx))}",
-                      _dates(nan_idx)))
+            add(
+                Issue(
+                    f"nan_{col}",
+                    err,
+                    f"{len(nan_idx)} NaN in {col}: {_fmt(_dates(nan_idx))}",
+                    _dates(nan_idx),
+                )
+            )
         nonpos = idx[(df[col] <= 0).to_numpy()]
         if len(nonpos):
-            add(Issue(f"nonpositive_{col}", err, f"{len(nonpos)} values <= 0 in {col}",
-                      _dates(nonpos)))
+            add(
+                Issue(
+                    f"nonpositive_{col}", err, f"{len(nonpos)} values <= 0 in {col}", _dates(nonpos)
+                )
+            )
 
     # OHLC coherence. Warning only: old index data often has open=high=low=close or open=0.
     o, h, lo, c = (df[k].to_numpy() for k in ("open", "high", "low", "close"))
@@ -150,9 +164,15 @@ def validate_prices(
         bad = (h < np.fmax(o, c) * (1 - tol)) | (lo > np.fmin(o, c) * (1 + tol)) | (h < lo)
     if bad.any():
         bad_idx = idx[bad]
-        add(Issue("ohlc_consistency", warn,
-                  f"{int(bad.sum())} bars with high/low outside open/close: "
-                  f"{_fmt(_dates(bad_idx, 5))}", _dates(bad_idx)))
+        add(
+            Issue(
+                "ohlc_consistency",
+                warn,
+                f"{int(bad.sum())} bars with high/low outside open/close: "
+                f"{_fmt(_dates(bad_idx, 5))}",
+                _dates(bad_idx),
+            )
+        )
 
     # Adjustment factor adj_close / close: in (0, 1], non-decreasing in time (dividends and
     # splits only ever scale the *past* down), and == 1 when nothing is paid (crypto, price index).
@@ -162,48 +182,88 @@ def validate_prices(
             add(Issue("adj_ratio_range", err, "adj_close / close outside (0, 1]"))
         drops = ratio.index[(ratio.diff() < -tol).to_numpy()]
         if len(drops):
-            add(Issue("adj_ratio_monotonic", warn,
-                      f"adjustment factor decreases on {len(drops)} dates: {_fmt(_dates(drops, 5))}",
-                      _dates(drops)))
+            add(
+                Issue(
+                    "adj_ratio_monotonic",
+                    warn,
+                    f"adjustment factor decreases on {len(drops)} dates: {_fmt(_dates(drops, 5))}",
+                    _dates(drops),
+                )
+            )
         if kind in ("crypto", "index") and (abs(ratio - 1) > tol).any():
-            add(Issue("adj_ratio_unexpected", warn,
-                      f"{kind} should have adj_close == close (no distributions)"))
+            add(
+                Issue(
+                    "adj_ratio_unexpected",
+                    warn,
+                    f"{kind} should have adj_close == close (no distributions)",
+                )
+            )
         if kind in ("etf", "equity") and (abs(ratio - 1) <= tol).all() and len(ratio) > 252:
-            add(Issue("adj_ratio_missing", warn,
-                      "adj_close == close over >1y for a distributing asset: adjusted data?"))
+            add(
+                Issue(
+                    "adj_ratio_missing",
+                    warn,
+                    "adj_close == close over >1y for a distributing asset: adjusted data?",
+                )
+            )
 
     # --- calendar ------------------------------------------------------------------------------
     first_date = report.first.date() if report.first is not None else start
     if (first_date - start) > timedelta(days=7):
-        add(Issue("late_start", warn,
-                  f"history starts {first_date}, {(first_date - start).days} days after "
-                  f"requested start {start} (provider history limit?)"))
+        add(
+            Issue(
+                "late_start",
+                warn,
+                f"history starts {first_date}, {(first_date - start).days} days after "
+                f"requested start {start} (provider history limit?)",
+            )
+        )
     expected = expected_sessions(calendar, max(start, first_date), end)
     present = idx.unique()
     missing = expected.difference(present)
     extra = present.difference(expected_sessions(calendar, start, end))
     if len(missing):
         sev = err if len(missing) > cfg.max_missing_sessions else warn
-        add(Issue("missing_sessions", sev,
-                  f"{len(missing)} {calendar} sessions missing: {_fmt(_dates(missing))}",
-                  _dates(missing)))
+        add(
+            Issue(
+                "missing_sessions",
+                sev,
+                f"{len(missing)} {calendar} sessions missing: {_fmt(_dates(missing))}",
+                _dates(missing),
+            )
+        )
     if len(extra):
-        add(Issue("extra_sessions", err,
-                  f"{len(extra)} bars on non-{calendar} dates: {_fmt(_dates(extra))}",
-                  _dates(extra)))
+        add(
+            Issue(
+                "extra_sessions",
+                err,
+                f"{len(extra)} bars on non-{calendar} dates: {_fmt(_dates(extra))}",
+                _dates(extra),
+            )
+        )
 
     # --- returns sanity ------------------------------------------------------------------------
     rets = df["adj_close"].pct_change(fill_method=None)
     jumps = rets.index[(rets.abs() > cfg.extreme_return_threshold).to_numpy()]
     if len(jumps):
         detail = ", ".join(f"{t:%Y-%m-%d} ({rets.loc[t]:+.1%})" for t in jumps[:5])
-        add(Issue("extreme_returns", warn,
-                  f"{len(jumps)} |return| > {cfg.extreme_return_threshold:.0%}: {detail}",
-                  _dates(jumps)))
+        add(
+            Issue(
+                "extreme_returns",
+                warn,
+                f"{len(jumps)} |return| > {cfg.extreme_return_threshold:.0%}: {detail}",
+                _dates(jumps),
+            )
+        )
     runs = _longest_constant_runs(df["close"], cfg.max_stale_days)
     if runs:
         detail = ", ".join(f"{t:%Y-%m-%d} x{n}" for t, n in runs[:5])
-        add(Issue("stale_prices", warn,
-                  f"{len(runs)} runs of >= {cfg.max_stale_days} identical closes: {detail}",
-                  tuple(t for t, _ in runs)))
+        add(
+            Issue(
+                "stale_prices",
+                warn,
+                f"{len(runs)} runs of >= {cfg.max_stale_days} identical closes: {detail}",
+                tuple(t for t, _ in runs),
+            )
+        )
     return report
