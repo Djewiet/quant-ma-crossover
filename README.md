@@ -1,5 +1,9 @@
 # quant-ma-crossover
 
+[![ci](https://github.com/Djewiet/quant-ma-crossover/actions/workflows/ci.yml/badge.svg)](https://github.com/Djewiet/quant-ma-crossover/actions/workflows/ci.yml)
+[![docs](https://github.com/Djewiet/quant-ma-crossover/actions/workflows/docs.yml/badge.svg)](https://djewiet.github.io/quant-ma-crossover/)
+![python](https://img.shields.io/badge/python-3.12%2B-blue)
+
 Does the classic **50/200-day moving-average crossover** ("golden cross / death cross") beat
 **buy & hold** on **Bitcoin** and the **S&P 500** once trading costs are included?
 
@@ -8,6 +12,7 @@ explicit trading calendars, automated data-quality checks and tests that guard a
 look-ahead bias.
 
 > Status: **step 1/5, data pipeline.** Signals, backtest and results come next.
+> Documentation (in French): **https://djewiet.github.io/quant-ma-crossover/**
 
 ## Data
 
@@ -68,15 +73,28 @@ src/ma_crossover/
     validation.py          data-quality report
     pipeline.py            fetch -> normalise -> validate -> store
 tests/                     offline tests (fake provider) + hypothesis property tests
+docs/ + mkdocs.yml         documentation site (French), deployed to GitHub Pages
 ```
 
-## Roadmap
+## Statut du projet
 
-1. ✅ Data: repo, download, cache, validation
-2. Concepts: returns, volatility, moving averages
-3. Backtest: signal (executed at t+1), positions, equity curve vs buy & hold
-4. Pitfalls: costs, slippage, look-ahead test, parameter sensitivity, out-of-sample
-5. Results and write-up
+| Step | Scope | Status |
+|---|---|---|
+| 1. Data | repo layout, BTC + S&P 500 download, immutable cache, validation | ✅ done |
+| 2. Concepts | returns, volatility, moving averages | ⬜ to do |
+| 3. Backtest | signal (executed at t+1), positions, equity curve vs buy & hold | ⬜ to do |
+| 4. Pitfalls | costs, slippage, look-ahead test, parameter sensitivity, out-of-sample | ⬜ to do |
+| 5. Results | write-up, figures, tag `v1.0.0` | ⬜ to do |
+
+## Documentation
+
+Built with MkDocs Material and deployed to GitHub Pages on every push to `main`
+([`docs.yml`](.github/workflows/docs.yml)). The API reference is generated from docstrings.
+
+```bash
+uv sync --group docs
+uv run mkdocs serve        # http://127.0.0.1:8000
+```
 
 ## Limitations
 
